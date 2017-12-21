@@ -1,0 +1,81 @@
+---
+title: "Mastering R Capstone - exploratory"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+```{r libs}
+library(tidyverse); library(tools)
+```
+```{r, eval=FALSE}
+#df.raw <- read_tsv("results")
+
+#if we really have to use read_delim it's 
+df.raw <- read_delim("results", delim="\t")
+```
+
+```{r}
+eq_clean_data <- function(indf){
+outdf <- indf %>%
+  mutate(MONTH = as.integer(ifelse(is.na(MONTH), 1, MONTH)),
+         DAY = as.integer(ifelse(is.na(DAY), 1, DAY)),
+         yy = as.integer(ifelse(YEAR < 0, (YEAR*-1), YEAR)),
+         DATE = as.Date(paste0(yy, "/", MONTH, "/", DAY), format='%Y/%m/%d'),
+         LATITUDE = as.numeric(LATITUDE),
+         LONGITUDE = as.numeric(LONGITUDE))
+lubridate::year(outdf$DATE) <- outdf$YEAR
+outdf <- outdf %>%
+  select(-YEAR, -MONTH, -DAY, -yy)
+return(outdf)
+}
+```
+
+```{r, eval=FALSE}
+df.clean <- eq_clean_data(df.raw)
+```
+
+```{r}
+eq_location_clean <- function(indf){
+  outdf <- indf %>% 
+    separate(col=LOCATION_NAME, into=c("Country", "LOCATION_NAME"), sep=":", fill="left", extra="merge") %>%
+    mutate(LOCATION_NAME = toTitleCase(tolower(LOCATION_NAME)),
+           LOCATION_NAME = str_trim(LOCATION_NAME)) %>%
+    select(-Country)
+#still need to remove leading blanks from location
+}
+```
+
+```{r, eval=FALSE}
+xxlocs <- df.clean %>% select(LOCATION_NAME) %>% separate(col=LOCATION_NAME, into=c("Country", "location"), sep=":", fill="left", extra="merge")
+#from library "tools"
+head(toTitleCase(tolower(xxlocs$location)))
+```
+
+```{r}
+df.clean <- read_delim("results", delim="\t") %>%
+  eq_clean_data() %>%
+  eq_location_clean() 
+head(df.clean$LOCATION_NAME, 30)
+```
+
+```{r}
+df.clean %>%
+  filter(COUNTRY %in% c("GREECE", "ITALY", "JAPAN")) %>%
+  mutate(TOTAL_DAMAGE_MILLIONS_DOLLARS = ifelse(is.na(TOTAL_DAMAGE_MILLIONS_DOLLARS), 0, as.numeric(TOTAL_DAMAGE_MILLIONS_DOLLARS)),
+         EQ_MAG_MB = ifelse(is.na(EQ_MAG_MB), 0, as.numeric(EQ_MAG_MB)), 
+         TOTAL_DEATHS = ifelse(is.na(TOTAL_DEATHS), 0, as.numeric(TOTAL_DEATHS))) %>%
+#  select(TOTAL_DEATHS, TOTAL_DAMAGE_MILLIONS_DOLLARS, EQ_MAG_MB) 
+  ggplot(aes(x=DATE, y=factor(COUNTRY), colour=EQ_MAG_MB, alpha=TOTAL_DEATHS, size=TOTAL_DAMAGE_MILLIONS_DOLLARS)) +
+  geom_point() + 
+  scale_x_date(date_labels = "%Y") 
+#+
+#  scale_colour_manual(values = c("#e5f5f9","#99d8c9","#2ca25f"))
+  
+```
+```{r}
+saveRDS(df.clean, "dfclean")
+```
+
