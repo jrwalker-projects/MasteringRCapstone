@@ -25,7 +25,14 @@ outdf <- indf %>%
          yy = as.integer(ifelse(YEAR < 0, (YEAR*-1), YEAR)),
          DATE = as.Date(paste0(yy, "/", MONTH, "/", DAY), format='%Y/%m/%d'),
          LATITUDE = as.numeric(LATITUDE),
-         LONGITUDE = as.numeric(LONGITUDE))
+         LONGITUDE = as.numeric(LONGITUDE),
+         EQ_PRIMARY = as.numeric(EQ_PRIMARY),
+         EQ_MAG_MW = as.numeric(EQ_MAG_MW),
+         EQ_MAG_MS = as.numeric(EQ_MAG_MS),
+         EQ_MAG_MB = as.numeric(EQ_MAG_MB),
+         EQ_MAG_ML = as.numeric(EQ_MAG_ML),
+         EQ_MAG_MFA = as.numeric(EQ_MAG_MFA),
+         REGION_CODE = as.factor(REGION_CODE))
 lubridate::year(outdf$DATE) <- outdf$YEAR
 outdf <- outdf %>%
   select(-YEAR, -MONTH, -DAY, -yy)
@@ -76,6 +83,6 @@ df.clean %>%
   
 ```
 ```{r}
-saveRDS(df.clean, "dfclean")
+saveRDS(df.clean, "dfclean.rds")
 ```
 
