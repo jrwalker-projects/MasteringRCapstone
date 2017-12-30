@@ -1,0 +1,60 @@
+---
+title: "map functions"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r}
+library(tidyverse); library(leaflet); library(tools)
+```
+
+```{r}
+eq_map <- function(df, annot_col, pretty = FALSE){
+  ptxt <- toTitleCase(tolower(annot_col))
+  tf <- df %>%
+    select(one_of(annot_col))
+  names(tf) <- "popup_info"
+  df$popup_info <- tf$popup_info
+  if(pretty){#add the column name
+    df <- df %>%
+      mutate(popup_info = paste("<b>",ptxt,":</b> ",popup_info))
+  }
+  leaflet() %>%
+    addTiles() %>%
+    addCircleMarkers(data = df, radius = ~ EQ_PRIMARY, 
+                     lng = ~ LONGITUDE, lat = ~ LATITUDE,
+                     popup = ~ popup_info)
+}
+```
+
+```{r}
+eq_create_label <- function(df){
+  tf <- df %>%
+    mutate(loc = ifelse(is.na(LOCATION_NAME), "", paste("<b>Location: </b>", LOCATION_NAME, "<br />")),
+           mag = ifelse(is.na(EQ_PRIMARY), "", paste("<b>Magnitude: </b>", EQ_PRIMARY, "<br />")),
+           dead = ifelse(is.na(TOTAL_DEATHS), "", paste("<b>Total Deaths: </b>", TOTAL_DEATHS)))
+  return(paste0(tf$loc, tf$mag, tf$dead))
+}
+```
+
+```{r}
+df.clean <- readRDS("dfclean.rds")
+```
+
+```{r}
+  df.clean %>% 
+  dplyr::filter(COUNTRY == "MEXICO" & lubridate::year(DATE) >= 2000) %>% 
+  eq_map(annot_col = "DATE")
+```
+
+
+```{r}
+df.clean %>% 
+  dplyr::filter(COUNTRY == "MEXICO" & lubridate::year(DATE) >= 2000) %>% 
+  dplyr::mutate(popup_text = eq_create_label(.)) %>% 
+  eq_map(annot_col = "popup_text")
+```
+
+
+
